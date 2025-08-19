@@ -1,24 +1,36 @@
-// src/services/taskService.ts
 import axios from "axios";
 
-const API_URL = "http://localhost:5000/api/tasks"; // backend base URL
+const API_URL = "http://localhost:5000/api/tasks"; // adjust if backend runs on different port
 
-export const getTasks = async () => {
-  const res = await axios.get(API_URL);
+export interface Task {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
+// ✅ Get all tasks
+export const getTasks = async (): Promise<Task[]> => {
+  const res = await axios.get<Task[]>(API_URL);
   return res.data;
 };
 
-export const createTask = async (task: { title: string; description?: string }) => {
-  const res = await axios.post(API_URL, task);
+// ✅ Create new task
+export const createTask = async (task: { title: string }): Promise<Task> => {
+  const res = await axios.post<Task>(API_URL, task);
   return res.data;
 };
 
-export const updateTask = async (id: string, updates: object) => {
-  const res = await axios.put(`${API_URL}/${id}`, updates);
+// ✅ Update task
+export const updateTask = async (
+  id: string,
+  updates: Partial<Task>
+): Promise<Task> => {
+  const res = await axios.put<Task>(`${API_URL}/${id}`, updates);
   return res.data;
 };
 
-export const deleteTask = async (id: string) => {
-  const res = await axios.delete(`${API_URL}/${id}`);
+// ✅ Delete task
+export const deleteTask = async (id: string): Promise<{ message: string; id: string }> => {
+  const res = await axios.delete<{ message: string; id: string }>(`${API_URL}/${id}`);
   return res.data;
 };

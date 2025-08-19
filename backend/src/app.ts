@@ -26,6 +26,9 @@ app.use(express.json());
 app.use("/api/tasks", taskRoutes);
 
 // Default route
+app.get("/raj",(req,res)=>{
+    res.send("Hello from Raj");
+})
 app.get("/", (req, res) => res.send("Backend is running"));
 
 // Start server

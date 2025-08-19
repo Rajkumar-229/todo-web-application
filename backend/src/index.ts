@@ -1,47 +1,38 @@
-import express, { Request, Response } from "express";
-import cors from "cors";
-import { Task } from "../src/types/Task"; // adjust path if needed
-import { connect } from "http2";
-import connectDB from "./config/db";
+import express from "express";
+import mongoose from "mongoose";
+import taskRoutes from "./routes/task.routes";
+import { errorHandler } from "./middlewares/errorHandler";
 
-connectDB();
 const app = express();
-app.use(cors());
+
+// Basic CORS (no extra package required)
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method === "OPTIONS") return res.sendStatus(200);
+  next();
+});
+
 app.use(express.json());
 
-let tasks: Task[] = [];  // ✅ now it's strongly typed
+// Routes
+app.use("/api/tasks", taskRoutes);
 
-// GET all tasks
-app.get("/api/tasks", (req: Request, res: Response) => {
-  res.json(tasks);
-});
+// Error handler
+app.use(errorHandler);
 
-// POST new task
-app.post("/api/tasks", (req: Request, res: Response) => {
-  const { title } = req.body;
-  if (!title || title.trim().length < 3) {
-    return res.status(400).json({ error: "Task title is required (min 3 chars)" });
-  }
-  const newTask: Task = { id: Date.now().toString(),  title: req.body.title, completed:  title ? true : false,} // if undefined, default to false };
-  tasks.push(newTask);
-  res.status(201).json(newTask);
-});
+// ---- DB + Server ----
+const PORT = process.env.PORT || 5000;
+const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/todo_app";
 
-// PUT toggle complete
-app.put("/api/tasks/:id", (req: Request, res: Response) => {
-  const { id } = req.params;
-  tasks = tasks.map((t) =>
-    t.id === id ? { ...t, completed: !t.completed } : t
-  );
-  res.json({ success: true });
-});
-
-// DELETE task
-app.delete("/api/tasks/:id", (req: Request, res: Response) => {
-  const { id } = req.params;
-  tasks = tasks.filter((t) => t.id !== id);
-  res.json({ success: true });
-});
-
-const PORT = 5000;
-app.listen(PORT, () => console.log(`Backend running on http://localhost:${PORT}`));
+mongoose
+  .connect(MONGO_URI)
+  .then(() => {
+    console.log("MongoDB connected");
+    app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+  })
+  .catch((err) => {
+    console.error("MongoDB connection error:", err);
+    process.exit(1);
+  });

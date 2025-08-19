@@ -1,20 +1,16 @@
-import { Schema, model, Document } from 'mongoose';
+import mongoose, { Document, Schema } from "mongoose";
 
-export interface ITask extends Document {
+export interface TaskDocument extends Document {
   title: string;
-  description?: string;
   completed: boolean;
-  createdAt: Date;
-  updatedAt: Date;
 }
 
-const TaskSchema = new Schema<ITask>(
-  {
-    title: { type: String, required: true, trim: true },
-    description: { type: String, trim: true },
-    completed: { type: Boolean, default: false }
-  },
-  { timestamps: true }
-);
+const TaskSchema = new Schema<TaskDocument>({
+  title: { type: String, required: true },
+  completed: { type: Boolean, default: false },
+});
 
-export const Task = model<ITask>('Task', TaskSchema);
+// ✅ Tell mongoose what our document looks like
+const TaskModel = mongoose.model<TaskDocument>("Task", TaskSchema);
+
+export default TaskModel;

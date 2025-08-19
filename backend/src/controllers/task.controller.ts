@@ -1,70 +1,96 @@
+import { Request, Response } from "express";
+import TaskModel, { TaskDocument } from "../models/task.model";
 
-import { Request, Response, NextFunction } from 'express';
-import { Task } from '../models/task.model';
-import { CreateTaskDto, UpdateTaskDto } from '../validators/task.dto';
-
-export async function createTask(req: Request<{}, {}, CreateTaskDto>, res: Response, next: NextFunction) {
+// ✅ Get all tasks
+export const getTasks = async (req: Request, res: Response) => {
   try {
-    const { title, description } = req.body;
-    const task = await Task.create({ title, description });
-    res.status(201).json(task);
-  } catch (err) { next(err); }
-}
+    const tasks: TaskDocument[] = await TaskModel.find();
+      res.json(
+        tasks.map((t) => ({
+          id:
+            typeof t._id === "string"
+              ? t._id
+              : t._id && typeof t._id.toString === "function"
+              ? t._id.toString()
+              : "",
+          title: t.title,
+          completed: t.completed,
+        }))
+      );
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch tasks" });
+  }
+};
 
-export async function getTasks(_req: Request, res: Response, next: NextFunction) {
+// ✅ Create new task
+export const createTask = async (req: Request, res: Response) => {
   try {
-    const tasks = await Task.find().sort({ createdAt: -1 });
-    res.json(tasks);
-  } catch (err) { next(err); }
-}
+    const { title } = req.body;
+    const newTask = new TaskModel({ title, completed: false });
+    const saved = await newTask.save();
 
-export async function getTask(req: Request, res: Response, next: NextFunction) {
-  try {
-    const task = await Task.findById(req.params.id);
-    if (!task) return res.status(404).json({ message: 'Task not found' });
-    res.json(task);
-  } catch (err) { next(err); }
-}
+    res.status(201).json({
+      id:
+        typeof saved._id === "string"
+          ? saved._id
+          : saved._id && typeof saved._id.toString === "function"
+          ? saved._id.toString()
+          : "",
+      title: saved.title,
+      completed: saved.completed,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to create task" });
+  }
+};
 
-// export async function updateTask(req: Request<{ id: string }, {}, UpdateTaskDto>, res: Response, next: NextFunction) {
-//   try {
-//     const task = await Task.findByIdAndUpdate(req.params.id, req.body, { new: true });
-//     if (!task) return res.status(404).json({ message: 'Task not found' });
-//     res.json(task);
-//   } catch (err) { next(err); }
-// }
-
-export async function deleteTask(req: Request, res: Response, next: NextFunction) {
-  try {
-    const deleted = await Task.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).json({ message: 'Task not found' });
-    res.json({ message: 'Task deleted' });
-  } catch (err) { next(err); }
-}
-
-
-// controllers/task.controller.ts
-
-
+// ✅ Update task
 export const updateTask = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { title } = req.body;
+    const { title, completed } = req.body;
 
-    const updatedTask = await Task.findByIdAndUpdate(
+    const updated = await TaskModel.findByIdAndUpdate(
       id,
-      {
-        ...(title && { auto: true }),
-        ...(title && { title }),
-      },
+      { title, completed },
       { new: true }
     );
 
-    if (!updatedTask) return res.status(404).json({ message: 'Task not found' });
+    if (!updated) return res.status(404).json({ message: "Task not found" });
 
-    res.json(updatedTask);
+    res.json({
+      id:
+        typeof updated._id === "string"
+          ? updated._id
+          : updated._id && typeof updated._id.toString === "function"
+          ? updated._id.toString()
+          : "",
+      title: updated.title,
+      completed: updated.completed,
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Failed to update task" });
+  }
+};
+
+//  Delete task
+export const deleteTask = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const deleted = await TaskModel.findByIdAndDelete(id);
+
+    if (!deleted) return res.status(404).json({ message: "Task not found" });
+
+    res.json({
+      message: "Task deleted",
+      id:
+        typeof deleted._id === "string"
+          ? deleted._id
+          : deleted._id && typeof deleted._id.toString === "function"
+          ? deleted._id.toString()
+          : "",
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to delete task" });
   }
 };
